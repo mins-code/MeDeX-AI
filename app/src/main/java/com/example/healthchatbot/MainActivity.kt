@@ -518,6 +518,14 @@ class MainActivity : AppCompatActivity() {
                     // Step 2: ACTUAL RunAnywhere SDK load (no more bypass)
                     withContext(Dispatchers.IO) {
                         try {
+                            // CRITICAL: Register LlamaCpp provider before loading
+                            Log.d(
+                                "HealthChatbot",
+                                "Registering LlamaCpp service provider for loading..."
+                            )
+                            LlamaCppServiceProvider.register()
+                            Log.d("HealthChatbot", "LlamaCpp provider registered successfully")
+
                             val models = listAvailableModels()
                             if (models.isNotEmpty()) {
                                 val modelId = models[0].id
