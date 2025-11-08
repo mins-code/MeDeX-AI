@@ -1,6 +1,7 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+    id("org.jetbrains.kotlin.plugin.serialization") version "1.9.22"
 }
 
 android {
@@ -41,12 +42,7 @@ android {
 
     packagingOptions {
         resources {
-            pickFirsts += "/META-INF/{AL2.0,LGPL2.1}"
-            pickFirsts += "/META-INF/DEPENDENCIES"
-            pickFirsts += "/META-INF/LICENSE"
-            pickFirsts += "/META-INF/LICENSE.txt"
-            pickFirsts += "/META-INF/NOTICE"
-            pickFirsts += "/META-INF/NOTICE.txt"
+            excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
 }
@@ -68,15 +64,14 @@ dependencies {
     // 1. AndroidX Security for secure storage (solves MasterKey$Builder crash).
     implementation("androidx.security:security-crypto:1.0.0")
 
-    // 2. Correct and consistent Ktor libraries for networking (solves getHttpTimeout error).
-    val ktorVersion = "2.3.6" // Use a consistent stable version
-    implementation("io.ktor:ktor-client-core:$ktorVersion")
-    implementation("io.ktor:ktor-client-cio:$ktorVersion")
+    // 2. Correct and consistent Ktor libraries for networking (solves getHttpTimeout/PlatformUtils errors).
+    val ktorVersion = "2.3.6"
+    implementation("io.ktor:ktor-client-android:$ktorVersion")
     implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
     implementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
 
     // Other project dependencies
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2") // Must align with Ktor
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
     implementation("androidx.work:work-runtime-ktx:2.9.0")
     implementation("com.tom-roush:pdfbox-android:2.0.27.0")
