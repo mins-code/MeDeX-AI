@@ -1,7 +1,7 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
-    id("org.jetbrains.kotlin.plugin.serialization") version "1.9.22"
+    id("org.jetbrains.kotlin.plugin.serialization") version "1.9.10"
 }
 
 android {
@@ -42,8 +42,48 @@ android {
 
     packagingOptions {
         resources {
+            pickFirsts += "/META-INF/{AL2.0,LGPL2.1}"
+            pickFirsts += "**/META-INF/DEPENDENCIES"
+            pickFirsts += "**/META-INF/LICENSE"
+            pickFirsts += "**/META-INF/LICENSE.txt"
+            pickFirsts += "**/META-INF/license.txt"
+            pickFirsts += "**/META-INF/NOTICE"
+            pickFirsts += "**/META-INF/NOTICE.txt"
+            pickFirsts += "**/META-INF/notice.txt"
+            pickFirsts += "**/META-INF/ASL2.0"
+            pickFirsts += "**/META-INF/*.kotlin_module"
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
+    }
+}
+
+configurations.all {
+    resolutionStrategy {
+        // Force all Ktor dependencies to use version 2.3.7 consistently
+        force("io.ktor:ktor-client-core:2.3.7")
+        force("io.ktor:ktor-client-android:2.3.7")
+        force("io.ktor:ktor-client-okhttp:2.3.7")
+        force("io.ktor:ktor-client-cio:2.3.7")
+        force("io.ktor:ktor-http:2.3.7")
+        force("io.ktor:ktor-utils:2.3.7")
+        force("io.ktor:ktor-io:2.3.7")
+        force("io.ktor:ktor-network:2.3.7")
+        force("io.ktor:ktor-client-content-negotiation:2.3.7")
+        force("io.ktor:ktor-serialization-kotlinx-json:2.3.7")
+        force("io.ktor:ktor-client-auth:2.3.7")
+        force("io.ktor:ktor-client-logging:2.3.7")
+        force("io.ktor:ktor-client-websockets:2.3.7")
+        force("io.ktor:ktor-client-encoding:2.3.7")
+        force("io.ktor:ktor-client-apache:2.3.7")
+        force("io.ktor:ktor-client-java:2.3.7")
+        force("kotlinx.serialization:kotlinx-serialization-json:1.6.0")
+        force("kotlinx.serialization:kotlinx-serialization-core:1.6.0")
+
+        // Prevent any conflicting versions
+        exclude(group = "io.ktor", module = "ktor-client-jvm")
+        exclude(group = "io.ktor", module = "ktor-http-jvm")
+        exclude(group = "io.ktor", module = "ktor-utils-jvm")
+        exclude(group = "io.ktor", module = "ktor-io-jvm")
     }
 }
 
@@ -64,14 +104,44 @@ dependencies {
     // 1. AndroidX Security for secure storage (solves MasterKey$Builder crash).
     implementation("androidx.security:security-crypto:1.0.0")
 
-    // 2. Correct and consistent Ktor libraries for networking (solves getHttpTimeout/PlatformUtils errors).
-    val ktorVersion = "2.3.6"
+    // COMPREHENSIVE KTOR FIX - Multiple version strategy to find compatibility
+
+    // Try the exact version RunAnywhere SDK was likely compiled against
+    val ktorVersion = "2.3.7" // Version mentioned in error logs
+
+    // Core Ktor client with all required implementations
+    implementation("io.ktor:ktor-client-core:$ktorVersion")
     implementation("io.ktor:ktor-client-android:$ktorVersion")
+    implementation("io.ktor:ktor-client-okhttp:$ktorVersion")
+    implementation("io.ktor:ktor-client-cio:$ktorVersion")
+
+    // HTTP and utilities - the problematic classes
+    implementation("io.ktor:ktor-http:$ktorVersion")
+    implementation("io.ktor:ktor-utils:$ktorVersion")
+    implementation("io.ktor:ktor-io:$ktorVersion")
+
+    // Content negotiation and serialization
     implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
     implementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
 
+    // Network and connection handling
+    implementation("io.ktor:ktor-network:$ktorVersion")
+    implementation("io.ktor:ktor-client-auth:$ktorVersion")
+    implementation("io.ktor:ktor-client-logging:$ktorVersion")
+
+    // Additional modules that might contain missing classes
+    implementation("io.ktor:ktor-client-websockets:$ktorVersion")
+    implementation("io.ktor:ktor-client-encoding:$ktorVersion")
+
+    // JVM-specific implementations (might be needed despite Android)
+    implementation("io.ktor:ktor-client-apache:$ktorVersion")
+    implementation("io.ktor:ktor-client-java:$ktorVersion")
+
+    // Serialization dependencies compatible with this Ktor version
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.6.0")
+
     // Other project dependencies
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2") // Must align with Ktor
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
     implementation("androidx.work:work-runtime-ktx:2.9.0")
     implementation("com.tom-roush:pdfbox-android:2.0.27.0")

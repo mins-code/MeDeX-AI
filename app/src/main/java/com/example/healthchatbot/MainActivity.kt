@@ -347,7 +347,7 @@ class MainActivity : AppCompatActivity() {
 
             initializationJob = lifecycleScope.launch {
                 try {
-                    Log.d("HealthChatbot", "=== BYPASS SDK DOWNLOAD - DIRECT APPROACH ===")
+                    Log.d("HealthChatbot", "=== REAL SDK DOWNLOAD - USING ACTUAL RUNANYWHERE ===")
 
                     // Step 1: Check SDK availability
                     updateStatus("Checking SDK availability...")
@@ -365,7 +365,7 @@ class MainActivity : AppCompatActivity() {
                     updateStatus("Initializing SDK...")
                     Log.d("HealthChatbot", "Starting SDK initialization...")
 
-                    // Step 2: Initialize SDK on background thread (this part works)
+                    // Step 2: Initialize SDK on background thread
                     withContext(Dispatchers.IO) {
                         try {
                             RunAnywhere.initialize(
@@ -383,7 +383,7 @@ class MainActivity : AppCompatActivity() {
                     updateStatus("Scanning for models...")
                     Log.d("HealthChatbot", "Scanning for available models...")
 
-                    // Step 3: Try to list models (this works)
+                    // Step 3: List and add models if needed
                     withContext(Dispatchers.IO) {
                         try {
                             val models = listAvailableModels()
@@ -410,42 +410,62 @@ class MainActivity : AppCompatActivity() {
                         }
                     }
 
-                    updateStatus("Bypassing problematic download service...")
-                    Log.d("HealthChatbot", "=== BYPASSING KTOR DOWNLOAD SERVICE ===")
+                    updateStatus("Starting real model download...")
+                    Log.d("HealthChatbot", "=== USING REAL RUNANYWHERE DOWNLOAD SERVICE ===")
 
-                    // Step 4: BYPASS the problematic downloadModel() call
-                    // Instead, simulate the download process
-                    updateStatus("Simulating model download...")
+                    // Step 4: ACTUAL RunAnywhere SDK download (no more bypass)
+                    withContext(Dispatchers.IO) {
+                        try {
+                            val models = listAvailableModels()
+                            if (models.isNotEmpty()) {
+                                val modelId = models[0].id
+                                Log.d("HealthChatbot", "Starting REAL download for model: $modelId")
 
-                    // Simulate download progress with realistic timing
-                    for (i in 1..10) {
-                        withContext(Dispatchers.Main) {
-                            updateStatus("Downloading model... ${i * 10}%")
+                                withContext(Dispatchers.Main) {
+                                    updateStatus("Downloading model...")
+                                }
+
+                                // REAL RunAnywhere SDK download with progress tracking
+                                RunAnywhere.downloadModel(modelId).collect { progress ->
+                                    val percentage = (progress * 100).toInt()
+                                    withContext(Dispatchers.Main) {
+                                        updateStatus("Downloading model... $percentage%")
+                                        Log.d(
+                                            "HealthChatbot",
+                                            "Real download progress: $percentage%"
+                                        )
+                                    }
+                                }
+
+                                isModelDownloaded = true
+                                Log.d(
+                                    "HealthChatbot",
+                                    "✅ REAL model download completed successfully"
+                                )
+                            } else {
+                                throw Exception("No models available for download")
+                            }
+                        } catch (e: Exception) {
+                            throw Exception("Real model download failed: ${e.message}", e)
                         }
-                        delay(800) // Realistic download simulation
                     }
-
-                    // Mark as downloaded without actually calling the problematic download service
-                    isModelDownloaded = true
-                    Log.d("HealthChatbot", "✅ Model download completed (bypassed)")
 
                     // Success
                     withContext(Dispatchers.Main) {
-                        updateStatus("✅ Model downloaded successfully! (Real AI Mode - Bypassed)")
+                        updateStatus("✅ Model downloaded successfully! (Real AI Mode)")
                         binding.buttonDownloadModel.text = "Downloaded ✅"
                         binding.buttonLoadModel.isEnabled = true
-                        Log.d("HealthChatbot", "=== DOWNLOAD COMPLETED SUCCESSFULLY (BYPASSED) ===")
+                        Log.d("HealthChatbot", "=== REAL DOWNLOAD COMPLETED SUCCESSFULLY ===")
                     }
 
                 } catch (e: Exception) {
-                    logError("Download Process Error", e)
+                    logError("Real Download Process Error", e)
                     withContext(Dispatchers.Main) {
-                        updateStatus("❌ Download failed - Using Test Mode")
-                        showError("Download failed, enabling Test Mode: ${e.message}")
+                        updateStatus("❌ Download failed - Check logs for details")
+                        showError("Real download failed: ${e.message}")
 
-                        // Enable test mode fallback - just change button text
-                        binding.buttonDownloadModel.text = "Test Mode ✅"
-                        binding.buttonLoadModel.isEnabled = true
+                        // Keep real mode, don't fall back to test mode
+                        binding.buttonDownloadModel.text = "Download Failed"
                     }
                 } finally {
                     withContext(Dispatchers.Main) {
@@ -455,110 +475,106 @@ class MainActivity : AppCompatActivity() {
             }
 
         } catch (e: Exception) {
-            logError("Download Model Error", e)
+            logError("Download Model Setup Error", e)
             showError("Download setup failed: ${e.message}")
             binding.buttonDownloadModel.isEnabled = true
         }
     }
 
     private fun loadModel() {
-        if (binding.buttonLoadModel.text != "Load Model") {
-            return
-        }
+        try {
+            if (!isSDKInitialized || !isModelDownloaded) {
+                showError("Please download model first")
+                return
+            }
 
-        lifecycleScope.launch {
-            try {
-                binding.buttonLoadModel.isEnabled = false
-                binding.buttonLoadModel.text = "Initializing..."
+            binding.buttonLoadModel.isEnabled = false
+            updateStatus("Loading model...")
 
-                Log.d("HealthChatbot", "Starting REAL model load process...")
+            lifecycleScope.launch {
+                try {
+                    Log.d("HealthChatbot", "=== REAL SDK LOAD - USING ACTUAL RUNANYWHERE ===")
 
-                val sdkReady = initializeSDKIfNeeded()
+                    updateStatus("Preparing model for loading...")
+                    Log.d("HealthChatbot", "Starting real model load...")
 
-                if (!sdkReady) {
+                    // Step 1: Check if models are available
+                    withContext(Dispatchers.IO) {
+                        try {
+                            val models = listAvailableModels()
+                            Log.d("HealthChatbot", "Found ${models.size} models for loading")
+
+                            if (models.isEmpty()) {
+                                throw Exception("No models available for loading")
+                            }
+                        } catch (e: Exception) {
+                            throw Exception("Model listing failed: ${e.message}", e)
+                        }
+                    }
+
+                    updateStatus("Loading AI model into memory...")
+                    Log.d("HealthChatbot", "=== USING REAL RUNANYWHERE LOAD SERVICE ===")
+
+                    // Step 2: ACTUAL RunAnywhere SDK load (no more bypass)
+                    withContext(Dispatchers.IO) {
+                        try {
+                            val models = listAvailableModels()
+                            if (models.isNotEmpty()) {
+                                val modelId = models[0].id
+                                Log.d("HealthChatbot", "Starting REAL load for model: $modelId")
+
+                                withContext(Dispatchers.Main) {
+                                    updateStatus("Loading neural network...")
+                                }
+
+                                // REAL RunAnywhere SDK load
+                                val success = RunAnywhere.loadModel(modelId)
+
+                                if (success) {
+                                    isModelLoaded = true
+                                    Log.d(
+                                        "HealthChatbot",
+                                        "✅ REAL model load completed successfully"
+                                    )
+                                } else {
+                                    throw Exception("Model load returned false")
+                                }
+                            } else {
+                                throw Exception("No models available for loading")
+                            }
+                        } catch (e: Exception) {
+                            throw Exception("Real model load failed: ${e.message}", e)
+                        }
+                    }
+
+                    // Success
                     withContext(Dispatchers.Main) {
-                        Toast.makeText(
-                            this@MainActivity,
-                            "SDK initialization failed",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                        binding.buttonLoadModel.text = "Load Model"
+                        updateStatus("✅ AI Model loaded and ready! (Real AI Mode)")
+                        binding.buttonLoadModel.text = "Loaded ✅"
+                        binding.editTextMessage.hint = "Ask me about your health..."
+                        Log.d("HealthChatbot", "=== REAL LOAD COMPLETED SUCCESSFULLY ===")
+                    }
+
+                } catch (e: Exception) {
+                    logError("Real Load Process Error", e)
+                    withContext(Dispatchers.Main) {
+                        updateStatus("❌ Load failed - Check logs for details")
+                        showError("Real load failed: ${e.message}")
+
+                        // Keep real mode, don't fall back to test mode
+                        binding.buttonLoadModel.text = "Load Failed"
+                    }
+                } finally {
+                    withContext(Dispatchers.Main) {
                         binding.buttonLoadModel.isEnabled = true
                     }
-                    return@launch
                 }
-
-                withContext(Dispatchers.IO) {
-                    try {
-                        withContext(Dispatchers.Main) {
-                            binding.textViewStatus.text = "Loading model..."
-                            binding.buttonLoadModel.text = "Loading..."
-                        }
-
-                        delay(1000)
-
-                        val models = listAvailableModels()
-                        if (models.isNotEmpty()) {
-                            val modelId = models[0].id
-                            Log.d("HealthChatbot", "Loading REAL model: $modelId")
-                            val success = RunAnywhere.loadModel(modelId)
-
-                            withContext(Dispatchers.Main) {
-                                if (success) {
-                                    binding.textViewStatus.text =
-                                        "✅ REAL AI Model loaded and ready!"
-                                    binding.editTextMessage.hint = "Ask me about your health..."
-                                    Toast.makeText(
-                                        this@MainActivity,
-                                        "REAL AI model loaded successfully!",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                    isModelLoaded = true
-                                } else {
-                                    binding.textViewStatus.text = "❌ Failed to load model"
-                                    Toast.makeText(
-                                        this@MainActivity,
-                                        "Load failed - download model first",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                }
-                            }
-                        } else {
-                            withContext(Dispatchers.Main) {
-                                binding.textViewStatus.text = "❌ No models found"
-                                Toast.makeText(
-                                    this@MainActivity,
-                                    "No models found - download first",
-                                    Toast.LENGTH_LONG
-                                ).show()
-                            }
-                        }
-                    } catch (e: Exception) {
-                        Log.e("HealthChatbot", "Real load failed", e)
-                        withContext(Dispatchers.Main) {
-                            binding.textViewStatus.text = "❌ Load failed: ${e.localizedMessage}"
-                            Toast.makeText(
-                                this@MainActivity,
-                                "Load failed: ${e.localizedMessage}",
-                                Toast.LENGTH_LONG
-                            ).show()
-                        }
-                    }
-                }
-            } catch (t: Throwable) {
-                Log.e("HealthChatbot", "Load process error", t)
-                withContext(Dispatchers.Main) {
-                    binding.textViewStatus.text = "❌ Load error: ${t.localizedMessage}"
-                    Toast.makeText(
-                        this@MainActivity,
-                        "Load error: ${t.localizedMessage}",
-                        Toast.LENGTH_LONG
-                    ).show()
-                }
-            } finally {
-                binding.buttonLoadModel.text = "Load Model"
-                binding.buttonLoadModel.isEnabled = true
             }
+
+        } catch (e: Exception) {
+            logError("Load Model Setup Error", e)
+            showError("Load setup failed: ${e.message}")
+            binding.buttonLoadModel.isEnabled = true
         }
     }
 
